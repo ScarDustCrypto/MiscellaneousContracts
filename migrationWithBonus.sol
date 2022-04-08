@@ -85,6 +85,7 @@ interface IERC20 {
 }
 
 contract Migration is Ownable{
+    uint256 scrdustSupply = 10_000_000_000_002*10**18;
     uint256 bonusPercentage =10;
     IERC20 public tokenToMigrateAddress = IERC20(0xa83055eaa689E477e7b2173eD7E3b55654b3A1f0); 
     IERC20 public newToken = IERC20(0x6bb570C82C493135cc137644b168743Dc1F7eb12);
@@ -110,12 +111,19 @@ contract Migration is Ownable{
     }
     function migrateTokens(uint256 tokenAmount)public{
         require(migrationActive,"migration not in progress come back soon");
-        require(isWhitelisted[msg.sender],"You are not in the list");
         require(tokenToMigrateAddress.balanceOf(msg.sender)>0,"Cant migrate not enough funds");
+        if(isWhitelisted[msg.sender]){
+            uint256 especialBonusTokens = scrdustSupply*5/1000;
+            tokenToMigrateAddress.transferFrom(msg.sender,address(this),tokenAmount);
+            newToken.transfer(msg.sender,tokenAmount+especialBonusTokens);
+            emit tokensMigrated(tokenAmount, msg.sender, block.timestamp);
+        }
+        else{
         uint256 bonusTokens = tokenAmount*bonusPercentage/100;
-        tokenToMigrateAddress.transferFrom(msg.sender,address(this),tokenAmount+bonusTokens);
-        newToken.transfer(msg.sender,tokenAmount);
+        tokenToMigrateAddress.transferFrom(msg.sender,address(this),tokenAmount);
+        newToken.transfer(msg.sender,tokenAmount+bonusTokens);
         emit tokensMigrated(tokenAmount, msg.sender, block.timestamp);
+        }
     }
     function whitelistMultipleAddresses(address [] memory accounts, bool isWhitelist) public onlyOwner{
         for(uint256 i = 0; i < accounts.length; i++) {
